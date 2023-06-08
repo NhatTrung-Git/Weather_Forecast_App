@@ -5,14 +5,17 @@ import re
 import json
 import pandas as pd
 import os
+import shutil
+from PyQt5 import QtGui
 from modules.custom_exception import *
 from random import randint
 from bs4 import BeautifulSoup
-from modules.crawler import Check_Url, ReadURL
+from modules.crawler import ReadURL
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from modules.preprocess import CalFeatureScores, Preprocessing
+from modules.model import RunDecisionTree, RunSVM, RunMLP, RunLSTM, CalScore, GetPredictedAndActualValues, GetPredictedAndActualValuesLSTM
 from PyQt5.QtCore import QAbstractTableModel, Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import QVBoxLayout, QDialog
 
@@ -43,6 +46,7 @@ class TableModel(QAbstractTableModel):
 class MatplotlibDialog(QDialog):
     def __init__(self, parent=None):
         super(MatplotlibDialog, self).__init__(parent)
+        self.setWindowIcon(QtGui.QIcon(':/icons/weather-cloudy.png'))
         self._figure = Figure(figsize=(10, 8))
         self._canvas = FigureCanvas(self._figure)
         self._toolbar = NavigationToolbar(self._canvas, self)
@@ -145,6 +149,65 @@ class MatplotlibDialog(QDialog):
 
         self._figure.tight_layout()
         self._canvas.draw()
+        
+    def PlotScoreBar(self, df, listModel):
+        modelNames = [str(type(i)).split("'")[1].split(".")[len(str(type(i)).split("'")[1].split(".")) - 1] for i in listModel]
+        evaluationScores = [CalScore(df,i) for i in listModel]
+        
+        self.setWindowTitle('Model Scores')
+        axes = self._figure.add_subplot(111)
+        bars = axes.bar(modelNames, evaluationScores)
+        
+        for bar in bars:
+            yval = bar.get_height()
+            axes.text(bar.get_x() + bar.get_width() / 2, yval, round(yval, 2), ha='center', va='bottom')
+
+        axes.set_xlabel('Model')
+        axes.set_ylabel('Score')
+        axes.set_title('Model Scores')
+        axes.tick_params(axis='x', rotation=0)
+        self._canvas.draw()
+        
+    def PlotPredictedScatter(self, df, modelPath):
+        actualValues, predictedValues, nameModel = GetPredictedAndActualValues(df, modelPath)
+        self.setWindowTitle('Predicted vs Actual Values')
+        axes = self._figure.add_subplot(111)
+
+        indices = range(len(actualValues))
+        axes.scatter(indices, predictedValues, label='Predicted', color='blue', alpha=0.5)
+        axes.scatter(indices, actualValues, label='Actual', color='red', alpha=0.5)
+
+        axes.set_title('Predicted vs Actual Values '+ nameModel)
+        axes.set_xlabel('Index')
+        axes.set_ylabel('Category')
+
+        axes.legend()
+        self._canvas.draw()
+        
+    def PlotPredictedLine(self, df, modelPath):
+        y_actual, y_pred, dates = GetPredictedAndActualValuesLSTM(df, modelPath)
+        columnNames = ['Temp', 'Wind', 'Direction', 'Humidity', 'Barometer']
+        
+        self.setWindowTitle('Predicted and Actual Values')
+        num_subplots = y_actual.shape[1]
+        
+        if num_subplots > 1:
+            axs = self._figure.subplots(num_subplots, 1, sharex=True)
+        else:
+            axs = [self._figure.add_subplot(1, 1, 1)]
+        
+        for i, axes in enumerate(axs):
+            axes.plot(dates, y_actual[:, i], label='Actual')
+            axes.plot(dates, y_pred[:, i], label='Predicted')
+            axes.set_ylabel('Value')
+            axes.legend()
+            axes.set_title(columnNames[i])
+
+        axs[-1].set_xlabel('Date')
+        axs[-1].tick_params(axis='x', rotation=90)
+        
+        self._figure.tight_layout()
+        self._canvas.draw()
             
 class LoadingWorker(QThread):
     loadingFinished = pyqtSignal(pd.DataFrame)
@@ -157,6 +220,15 @@ class LoadingWorker(QThread):
         # self.msleep(4000)
         data = pd.read_csv(self._filePath)
         self.loadingFinished.emit(data)
+        
+class SavingWorker(QThread):
+    def __init__(self, SRC):
+        super().__init__()
+        self._src = SRC
+
+    def run(self):
+        # self.msleep(4000)
+        shutil.copy(self._src, os.getcwd() + r'/resources/data/')
         
 class PreprocessingWorker(QThread):
     loadingFinished = pyqtSignal(pd.DataFrame)
@@ -181,7 +253,8 @@ class CrawlWorker(QThread):
             try:
                 urls, proxies = ReadURL()
             except FileNotFound as err:
-                self.logUpdated.emit('Log Error: ' + err.message)
+                self.logUpdated.emit('Log Error: ' + str(err.args[0]))
+                self.logUpdated.emit('Log Information: Stopping crawl...')
                 return
                 
             self.logUpdated.emit('Log Information: Starting crawl...')
@@ -190,7 +263,9 @@ class CrawlWorker(QThread):
                 
                 while(check):
                     if len(proxies) == 0:
-                        raise EmptyList('List proxy')
+                        self.logUpdated.emit('Log Error: List proxy is empty')
+                        self.logUpdated.emit('Log Information: Stopping crawl...')
+                        return
                     
                     rd_proxy = proxies[randint(0, len(proxies) - 1)]
                     
@@ -211,7 +286,9 @@ class CrawlWorker(QThread):
                     
                 while(check):
                     if len(proxies) == 0:
-                        raise EmptyList('List proxy')
+                        self.logUpdated.emit('Log Error: List proxy is empty')
+                        self.logUpdated.emit('Log Information: Stopping crawl...')
+                        return
 
                     rd_proxy = proxies[randint(0, len(proxies) - 1)]
 
@@ -248,7 +325,9 @@ class CrawlWorker(QThread):
                     
                     while(check):
                         if len(proxies) == 0:
-                            raise EmptyList('List proxy')
+                            self.logUpdated.emit('Log Error: List proxy is empty')
+                            self.logUpdated.emit('Log Information: Stopping crawl...')
+                            return
 
                         rd_proxy = proxies[randint(0, len(proxies) - 1)]
 
@@ -273,7 +352,9 @@ class CrawlWorker(QThread):
                         
                         while(check):
                             if len(proxies) == 0:
-                                raise EmptyList('List proxy')
+                                self.logUpdated.emit('Log Error: List proxy is empty')
+                                self.logUpdated.emit('Log Information: Stopping crawl...')
+                                return
 
                             rd_proxy = proxies[randint(0, len(proxies) - 1)]
 
@@ -303,12 +384,33 @@ class CrawlWorker(QThread):
                         else:
                             df.to_csv(os.getcwd() + r'/resources/data_crawled/' + url[2], mode='a', index=False, header=False)
                             
-                        self.logUpdated.emit('Log Warning: Saving data, you should not stop app')
+                        self.logUpdated.emit('Log Warning: Saving data, you should not stop crawling data')
                         export_url = pd.read_csv(os.getcwd() + r'/resources/url_data.csv', encoding='utf-8')
                         export_url['End Date'] = export_url['End Date'].where(export_url['URL'] != url[0], j.attrs['value'])
                         export_url.to_csv(os.getcwd() + r'/resources/url_data.csv', index=False, encoding='utf-8-sig')
-                        self.logUpdated.emit('Log Information: Saving data successfully, you can stop app')
+                        self.logUpdated.emit('Log Information: Saving data successfully, you can stop crawling data')
                 
     def stop(self):
         self.logUpdated.emit('Log Information: Stopping crawl...')
         self.running = False
+        
+class TrainWorker(QThread):
+    trainFinished = pyqtSignal()
+    def __init__(self, DATA, MODEL, NAME, TIMESTEPS=1):
+        super().__init__()
+        self._data = DATA
+        self._model = MODEL
+        self._fileName = NAME
+        self._location = r'/resources/models/'
+        self._timeSteps = TIMESTEPS
+        
+    def run(self):
+        if self._model == 'Decision Tree':
+            RunDecisionTree(self._data, self._location, self._fileName)
+        elif self._model == 'Support Vector Classification':
+            RunSVM(self._data, self._location, self._fileName)
+        elif self._model == 'Multi-Layer Perceptron Classifier':
+            RunMLP(self._data, self._location, self._fileName)
+        else:
+            RunLSTM(self._data, self._location, self._fileName, self._timeSteps)
+        self.trainFinished.emit()

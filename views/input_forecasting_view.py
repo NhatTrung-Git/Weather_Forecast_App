@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
+from PyQt5 import QtGui
 from ui.input_forecasting_dialog import Ui_Dialog as Ui_input_forecasting_dialog
 from modules.model import LoadModel
 from views.class_view import TableModel
-from PyQt5.QtWidgets import QDialog, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QDialog, QFileDialog, QMessageBox, QSizePolicy, QHeaderView
 from PyQt5.QtCore import QDir
 from PyQt5.QtGui import QDoubleValidator
 
@@ -16,6 +17,7 @@ class InputForecastingDialog(QDialog):
         self._result = pd.DataFrame(columns=['Weather'])
         
         self._ui.setupUi(self)
+        self.setWindowIcon(QtGui.QIcon(':/icons/weather-cloudy.png'))
         self.setWindowTitle('Forecasting')
         self._ui.TxTemp.setValidator(validator)
         self._ui.TxWind.setValidator(validator)
@@ -28,10 +30,12 @@ class InputForecastingDialog(QDialog):
         
     def setTableModel(self, data):
         self._ui.TbResult.setModel(TableModel(data))
-        self._ui.TbResult.resizeColumnsToContents()
+        self._ui.TbResult.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self._ui.TbResult.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         
     def ChooseModel(self):
         self._fileDialogForecast = QFileDialog()
+        self._fileDialogForecast.setWindowIcon(QtGui.QIcon(':/icons/weather-cloudy.png'))
         self._fileDialogForecast.setModal(True)
         self._fileDialogForecast.setWindowTitle('Select File')
         self._fileDialogForecast.setNameFilter('PKL Files (*.pkl)')

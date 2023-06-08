@@ -6,7 +6,15 @@ from sklearn.model_selection import train_test_split
 def Preprocessing(DATA):
     if DATA['Date'].dtypes == object:
         DATA = DATA.astype({'Date':'string'})
-        DATA['Date'] = pd.to_datetime(DATA['Date'].str.strip(), format='%Y%m%d %H:%M')
+        try:
+            DATA['Date'] = pd.to_datetime(DATA['Date'].str.strip(), format='%Y%m%d %H:%M')
+        except Exception:
+            pass
+        
+        try:
+            DATA['Date'] = pd.to_datetime(DATA['Date'], format='%m/%d/%Y %H:%M')
+        except Exception:
+            pass
         
     if DATA['Weather'].dtypes == object:
         DATA = DATA.astype({'Weather':'string'})
