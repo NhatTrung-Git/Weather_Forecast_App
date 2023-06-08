@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file './ui/trainning_model_dialog.ui'
+# Form implementation generated from reading ui file 'ui\trainning_model_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -21,33 +21,28 @@ class Ui_Dialog(object):
         self.groupBox.setObjectName("groupBox")
         self.formLayout = QtWidgets.QFormLayout(self.groupBox)
         self.formLayout.setObjectName("formLayout")
-        self.label_4 = QtWidgets.QLabel(self.groupBox)
-        self.label_4.setObjectName("label_4")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_4)
-        self.BtnChooseTraining = QtWidgets.QPushButton(self.groupBox)
-        self.BtnChooseTraining.setObjectName("BtnChooseTraining")
-        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.BtnChooseTraining)
         self.label_2 = QtWidgets.QLabel(self.groupBox)
         self.label_2.setObjectName("label_2")
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_2)
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.label_2)
         self.LNameTraining = QtWidgets.QLineEdit(self.groupBox)
         self.LNameTraining.setObjectName("LNameTraining")
-        self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.LNameTraining)
-        self.label_3 = QtWidgets.QLabel(self.groupBox)
-        self.label_3.setObjectName("label_3")
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_3)
-        self.LLSTMTraining = QtWidgets.QLineEdit(self.groupBox)
-        self.LLSTMTraining.setObjectName("LLSTMTraining")
-        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.LLSTMTraining)
+        self.formLayout.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.LNameTraining)
         self.label = QtWidgets.QLabel(self.groupBox)
         self.label.setObjectName("label")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.label)
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label)
         self.CbTraining = QtWidgets.QComboBox(self.groupBox)
         self.CbTraining.setObjectName("CbTraining")
         self.CbTraining.addItem("")
         self.CbTraining.addItem("")
         self.CbTraining.addItem("")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.CbTraining)
+        self.CbTraining.addItem("")
+        self.formLayout.setWidget(2, QtWidgets.QFormLayout.FieldRole, self.CbTraining)
+        self.label_3 = QtWidgets.QLabel(self.groupBox)
+        self.label_3.setObjectName("label_3")
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_3)
+        self.LSteps = QtWidgets.QLineEdit(self.groupBox)
+        self.LSteps.setObjectName("LSteps")
+        self.formLayout.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.LSteps)
         self.verticalLayout.addWidget(self.groupBox)
         self.BtnBox = QtWidgets.QDialogButtonBox(Dialog)
         self.BtnBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
@@ -61,21 +56,10 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Data"))
         self.groupBox.setTitle(_translate("Dialog", "Training Model"))
-        self.label_4.setText(_translate("Dialog", "Location"))
-        self.BtnChooseTraining.setText(_translate("Dialog", "Choose"))
         self.label_2.setText(_translate("Dialog", "Model Name"))
-        self.label_3.setText(_translate("Dialog", "LSTM Name"))
         self.label.setText(_translate("Dialog", "Model"))
         self.CbTraining.setItemText(0, _translate("Dialog", "Decision Tree"))
         self.CbTraining.setItemText(1, _translate("Dialog", "Support Vector Classification"))
         self.CbTraining.setItemText(2, _translate("Dialog", "Multi-Layer Perceptron Classifier"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    Dialog = QtWidgets.QDialog()
-    ui = Ui_Dialog()
-    ui.setupUi(Dialog)
-    Dialog.show()
-    sys.exit(app.exec_())
+        self.CbTraining.setItemText(3, _translate("Dialog", "Long short term memory"))
+        self.label_3.setText(_translate("Dialog", "Steps"))

@@ -1,3 +1,4 @@
+from PyQt5 import QtGui
 from sklearn.preprocessing import LabelEncoder
 from modules.preprocess import Preprocessing
 from ui.data_visualization_dialog import Ui_Dialog as Ui_data_visualization_Dialog
@@ -16,6 +17,7 @@ class DataVisualizationDialog(QDialog):
         self._plotWidget = None
         
         self._ui.setupUi(self)
+        self.setWindowIcon(QtGui.QIcon(':/icons/weather-cloudy.png'))
         self._ui.LStartRow.setValidator(validator)
         self._ui.LEndRow.setValidator(validator)
         self._ui.BtnBox.rejected.connect(self.close)

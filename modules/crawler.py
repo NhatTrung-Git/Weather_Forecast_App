@@ -3,7 +3,6 @@
 
 import requests
 import re
-import json
 import pandas as pd
 import os
 from modules.custom_exception import *
@@ -16,29 +15,7 @@ def Check_Url(URL):
     if not check:
         raise InvalidUrl()
         
-    if os.path.exists(os.getcwd() + r'/resources/proxy.csv'):
-        proxies = pd.read_csv(os.getcwd() + r'/resources/proxy.csv', encoding='utf-8').values.tolist()
-    else:
-        raise FileNotFound('proxy.csv')
-        
-    check_proxy = True
-    
-    while(check_proxy):
-        if len(proxies) == 0:
-            raise EmptyList('List proxy')
-            
-        rd_proxy = proxies[randint(0, len(proxies) - 1)]
-            
-        try:
-            response = requests.get(URL, proxies={'https': rd_proxy[0]}, timeout=30)
-
-            if response.status_code != 404 and not response.ok:
-                proxies.remove(rd_proxy)
-            else:
-                check_proxy = False
-                
-        except Exception as err:
-            proxies.remove(rd_proxy)
+    response = requests.get(URL)
             
     if response.status_code == 404:
         raise FailedToFetch()
