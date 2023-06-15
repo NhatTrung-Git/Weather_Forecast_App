@@ -8,6 +8,7 @@ from views.input_forecasting_view import InputForecastingDialog
 from views.input_url_view import InputUrlDialog
 from views.compare_view import CompareDialog
 from views.class_view import TableModel, LoadingWorker, PreprocessingWorker, CrawlWorker, SavingWorker, MatplotlibDialog
+from modules.model import LoadModel, LoadLSTM, GetPredictedValue
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QSizePolicy, QHeaderView
 from PyQt5.QtCore import QDir, QFileInfo
 from ui.main_window import Ui_MainWindow
@@ -62,6 +63,7 @@ class MainWindow(QMainWindow):
         self._ui.BtnExportScraping.clicked.connect(self.ExportCollectedData)
         self._ui.BtnCompareForecasting.clicked.connect(self.CompareForecasting)
         self._ui.BtnVisualizeForecasting.clicked.connect(self.VisualizeForecasting)
+        self._ui.BtnChooseForecasting.clicked.connect(self.ChooseModel)
         
         
     def setTableModel(self, data):
@@ -83,6 +85,11 @@ class MainWindow(QMainWindow):
             
         if not self._ui.tab_3.isEnabled():
             self._ui.tabWidget.setTabEnabled(2, True)
+            
+    def setTableForecastModel(self, data):
+        self._ui.TbForecasting.setModel(TableModel(data))
+        self._ui.TbForecasting.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self._ui.TbForecasting.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         
     def ChooseFile(self):
         self._fileDialogData = QFileDialog()
@@ -236,6 +243,58 @@ class MainWindow(QMainWindow):
                 self.plotWidget = MatplotlibDialog()
                 self.plotWidget.PlotPredictedScatter(self._dataFrame, filePath)
                 self.plotWidget.show()
+                
+    def ChooseModel(self):
+        self._fileDialogData = QFileDialog()
+        self._fileDialogData.setModal(True)
+        self._fileDialogData.setWindowTitle('Select two files')
+        self._fileDialogData.setNameFilter('Model files (*.pkl *.h5)')
+        self._fileDialogData.setFileMode(QFileDialog.ExistingFiles)
+        self._fileDialogData.setViewMode(QFileDialog.Detail)
+        self._fileDialogData.setDirectory(QDir('./resources/models'))
+        
+        if self._fileDialogData.exec_():
+            filePaths = self._fileDialogData.selectedFiles()
+            
+            if len(filePaths) > 2 or len(filePaths) < 2:
+                messageChoose = QMessageBox()
+                messageChoose.setWindowIcon(QtGui.QIcon(':/icons/weather-cloudy.png'))
+                messageChoose.setWindowTitle('Error')
+                messageChoose.setIcon(QMessageBox.Critical)
+                messageChoose.setText('Please select exactly one .pkl file and one .h5 file.')
+                messageChoose.exec_()
+            else:
+                pklFile = None
+                h5File = None
+                
+                for path in filePaths:
+                    if QFileInfo(path).fileName().endswith('.pkl'):
+                        pklFile = path
+                    else:
+                        h5File = path
+                        
+                if pklFile is None or h5File is None:
+                    messageChoose = QMessageBox()
+                    messageChoose.setWindowIcon(QtGui.QIcon(':/icons/weather-cloudy.png'))
+                    messageChoose.setWindowTitle('Error')
+                    messageChoose.setIcon(QMessageBox.Critical)
+                    messageChoose.setText('Please select exactly one .pkl file and one .h5 file.')
+                    messageChoose.exec_()
+                else:
+                    model = LoadModel(pklFile)
+                    lstm = LoadLSTM(h5File)
+                    
+                    if (lstm.input_shape[1] * (self._ui.SBForecasting.value() + 1)) > self._dataFrame.shape[0]:
+                        messageChoose = QMessageBox()
+                        messageChoose.setWindowIcon(QtGui.QIcon(':/icons/weather-cloudy.png'))
+                        messageChoose.setWindowTitle('Error')
+                        messageChoose.setIcon(QMessageBox.Critical)
+                        messageChoose.setText('LSTM input shape exceeds dataframe rows.')
+                        messageChoose.exec_()
+                    else:
+                        predictedValues = GetPredictedValue(self._dataFrame, model, lstm, self._ui.SBForecasting.value())
+                        self.setTableForecastModel(predictedValues)
+
             
     def FinishExportCollectedData(self):
         self._loadingDialog.close()

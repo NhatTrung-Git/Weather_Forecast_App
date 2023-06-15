@@ -1,6 +1,7 @@
 import joblib
 import os
 import numpy as np
+import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
@@ -129,13 +130,22 @@ def CreateDatasetWithDates(dataset, dataDates, time_steps=1):
 
     return np.array(x), np.array(y), np.array(dates)
 
+def CreateX(dataset, time_steps=1):
+    x = []
+    
+    for i in range(len(dataset) - time_steps):
+        a = dataset[i:i + time_steps, :]
+        x.append(a)
+
+    return np.array(x)
+
 def RunLSTM(df, location, fileName, time_steps):
     df = df[['Temp', 'Wind', 'Direction', 'Humidity', 'Barometer']]
     param_grid = {'units': [50, 100, 150], 'batch_size': [32, 64, 128], 'epochs': [50, 100, 150]}
 
     dataset = df.values
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    dataset = scaler.fit_transform(dataset)
+    # scaler = MinMaxScaler(feature_range=(0, 1))
+    # dataset = scaler.fit_transform(dataset)
     x, y = CreateDataset(dataset, time_steps)
     train_size = int(len(x) * 0.7)
     x_train = x[:train_size]
@@ -200,8 +210,8 @@ def GetPredictedAndActualValues(df, modelPath):
 def GetPredictedAndActualValuesLSTM(df, modelPath):
     dataset = df[['Temp', 'Wind', 'Direction', 'Humidity', 'Barometer']].values
     dataDate = df[['Date']].values
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    dataset = scaler.fit_transform(dataset)
+    # scaler = MinMaxScaler(feature_range=(0, 1))
+    # dataset = scaler.fit_transform(dataset)
 
     model = LoadLSTM(modelPath)
     x, y, dates = CreateDatasetWithDates(dataset, dataDate, model.input_shape[1])
@@ -219,6 +229,18 @@ def GetPredictedAndActualValuesLSTM(df, modelPath):
     x_test = x_test.reshape((x_test.shape[0], x_test.shape[1], x_test.shape[2]))
 
     y_pred_test = model.predict(x_test)
-    y_pred_test = scaler.inverse_transform(y_pred_test)
+    # y_pred_test = scaler.inverse_transform(y_pred_test)
 
     return y_test, y_pred_test, dates_test
+
+def GetPredictedValue(df, model, lstm, time_steps):
+    lastDate = df['Date'].tail(1).values[0]
+    data = df.tail(lstm.input_shape[1] * (time_steps + 1)).reset_index(drop=True)
+    data = data[['Temp', 'Wind', 'Direction', 'Humidity', 'Barometer']]
+    x = CreateX(data.values, lstm.input_shape[1])
+    x = x.reshape((x.shape[0], x.shape[1], x.shape[2]))
+    predictValues = lstm.predict(x)
+    predictedDF = pd.DataFrame(predictValues.reshape(-1, 5), columns=['Temp', 'Wind', 'Direction', 'Humidity', 'Barometer'])
+    predictedDF['Weather'] = model.predict(predictedDF)
+    predictedDF['Date'] = lastDate + pd.to_timedelta((predictedDF.index + 1) * 30, unit='minutes')
+    return predictedDF[['Date', 'Weather', 'Temp', 'Wind', 'Direction', 'Humidity', 'Barometer']]
