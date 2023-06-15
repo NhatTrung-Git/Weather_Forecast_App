@@ -6,6 +6,7 @@ import json
 import pandas as pd
 import os
 import shutil
+import matplotlib.dates as mdates
 from PyQt5 import QtGui
 from modules.custom_exception import *
 from random import randint
@@ -204,6 +205,7 @@ class MatplotlibDialog(QDialog):
             axes.set_title(columnNames[i])
 
         axs[-1].set_xlabel('Date')
+        axs[-1].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M'))
         axs[-1].tick_params(axis='x', rotation=90)
         
         self._figure.tight_layout()

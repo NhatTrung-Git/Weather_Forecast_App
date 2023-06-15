@@ -78,6 +78,6 @@ class Ui_Dialog(object):
         self.BtnChoose.setText(_translate("Dialog", "Choose"))
         self.label_2.setText(_translate("Dialog", "Temperature (°C)"))
         self.label_3.setText(_translate("Dialog", "Wind (km/h)"))
-        self.label_4.setText(_translate("Dialog", "Direction"))
-        self.label_5.setText(_translate("Dialog", "Humidity"))
+        self.label_4.setText(_translate("Dialog", "Direction (°)"))
+        self.label_5.setText(_translate("Dialog", "Humidity (%)"))
         self.label_6.setText(_translate("Dialog", "Barometer (mbar)"))
